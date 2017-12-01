@@ -46,13 +46,15 @@ void Frontier::spawnBlock()	{
 	// first, spawn a block by dropping some character onto the top of the board
 	// TODO:
 	// implement some random function to drop it randomly
+	// after the above is implemented, make sure to GAME OVER if the spot where we spawned the tetronimo is covered
 	blocks[WIDTH/2][0] = 'A';
 	isAlive[WIDTH/2][0] = true;
 }
 
 void Frontier::move(int a, int b, int c, int d)	{
 	// moves one ALIVE block to a DEAD space (if it doesn't do this, game logic breaks)
-	// this function is kind of fucked i think, could be a breaking point later down the line
+	
+	// note that I will have to check for collision before moving!
 	
 	// first, switch the block characters
 	char tempChar = blocks[c][d];
@@ -89,7 +91,7 @@ void Frontier::drop()	{
 					}
 
 				} else	{
-					cout << "I can't move down!\n";
+					//cout << "I can't move down!\n";
 					setAllDead();  // if our tetronimo can't move farther for any block, then just set all to dead
 				}
 			}
@@ -97,36 +99,101 @@ void Frontier::drop()	{
 	}
 }
 
+void Frontier::deleteAndShiftLine(int j)	{
+	// this function will delete everything on line j then shift down
+	
+	// first, lets handle the deletion
+	for (int i = 0; i < WIDTH; ++i)	{
+		blocks[i][j] = '.';
+	}
+
+	// now, lets shift all down
+	for (int newJ = j; newJ > 0; --newJ)	{
+		// grab the line above it
+		for (int i = 0; i < WIDTH; ++i)	{
+			blocks[i][newJ] = blocks[i][newJ-1];
+		}
+	}
+}
+
+void Frontier::cleanLines()	{ 
+	// this function will go through every line, and if a line is full of DEAD A's then 
+	// it will delete the line using deleteLine(int)
+	for (int j = 0; j < HEIGHT; ++j)	{
+		int counter = 0;
+		for (int i = 0; i < WIDTH; ++i)	{
+			if (!isAlive[i][j] && blocks[i][j] == 'A')	{
+				counter++;
+			}
+		}
+		if (counter == WIDTH)	{
+			deleteAndShiftLine(j);
+		}
+	}
+}
+
+void Frontier::fillLine()	{ 
+	// a function used to speed up testing time
+	// it will fill the farthest line downwards with a bunch of dead A's
+	for (int i = 0; i < WIDTH-1; ++i)	{
+		blocks[i][HEIGHT-1] = 'A';
+	}
+}
+	
+
 void Frontier::turn()	{
 	// this handles what to do every single "turn"
 	// I am going to define a turn as what is done between every single dt
 	
 	// Not the best code, but it will work; clean it up later!
+	// This does not perform how tetris normally does; replay tetris then copy mechanics to polish
 	
-	cout << "running turn right now!\n";
+	
+	// lets handle any input
+	// lets use ncurses for this for the terminal implementation
+
+	// NOTE TO MAX:
+	// 	I will write what's going on with the ncurses implementation, just take that functionality and move it to Arduino using arduino libraries
 	
 	initscr(); // start curses mode
 	noecho(); // I don't want the user to see what he's inputting!
-	halfdelay(TIME_TO_WAIT);
+	halfdelay(TIME_TO_WAIT); // this sets how long getch() will wait for something to appear on istream before it just returns -1 (fail state)
 	char currentMove = getch(); // this will grab a character on istream at this moment if there's anything to grab
 	endwin();  // end curses mode
 
 	if (currentMove == 'a')	{ 
-		cout << "I'm moving to the left!\n";
+		//cout << "I'm moving to the left!\n";
+		for (int i = 0; i < WIDTH; ++i)	{
+			for (int j = HEIGHT-1; j >= 0; --j)	{ // this way I will never propagate a movement unintended
+				if (isAlive[i][j] && i > 0 && blocks[i-1][j] == '.')	{
+					move(i,j,i-1,j);
+				}
+			}
+		}
 	}
 
-	if (currentMove
+	if (currentMove == 'd')	{
+		//cout << "I'm moving to the right!\n";
+		for (int i = WIDTH-1; i >= 0; --i)	{
+			for (int j = HEIGHT-1; j >= 0; --j)	{
+				if (isAlive[i][j] && i < WIDTH-1 && blocks[i+1][j] == '.')	{
+					move(i,j,i+1,j);
+				}
+			}
+		}
+	}
 
-	cout << "ended curses mode!\n";
-	
-	// lets handle any input
-	// lets use ncurses for this for the terminal implementation
-	// NOTE TO MAX:
-	// 	I will write what's going on with the ncurses implementation, just take that functionality and move it to Arduino using arduino libraries
-	
+	// TODO:
+	// Implement a fast fall using W
 
 	// lets handle the drop down of all alive blocks
 	drop();
+
+	// finally, lets handle the case where I need to clean up and shift the lines down
+	// this isn't the best solution but it will work
+	for (int i = 0; i < HEIGHT-1; ++i)	{ // we will have to clean up at MOST HEIGHT-1 lines
+		cleanLines();  // i should test to see 
+	}
 
 	// lets see if we need to spawn a block, and if we do lets spawn it for the next iteration of this function
 	if (shouldSpawn)	{

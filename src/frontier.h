@@ -28,6 +28,9 @@ public:
     void drop();
     void move(int,int,int,int);
     void setAllDead();
+    void cleanLines();
+    void deleteAndShiftLine(int);
+    void fillLine();
 };
 
 #endif
