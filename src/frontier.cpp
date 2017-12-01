@@ -52,7 +52,7 @@ void Frontier::spawnBlock()	{
 	int whichBlock = rand()%NUM_BLOCKS;
 
 	// for testing purposes...
-	whichBlock = 2;
+	whichBlock = 6;
 	cout << "spawning a block!\n";
 	
 	// now put the raw implementation of the blocks here
@@ -71,8 +71,7 @@ void Frontier::spawnBlock()	{
 		isAlive[randNum+1][1] = true;
 	}
 	
-	// T shaped block
-	if (whichBlock == 1)	{
+	if (whichBlock == 1)	{ // T shaped block
 		int randNum = rand()%(WIDTH-3);
 		blocks[randNum-1][1] = 'A';
 		blocks[randNum][1] = 'A';
@@ -97,6 +96,53 @@ void Frontier::spawnBlock()	{
 		isAlive[randNum][0] = true;
 	}
 
+	if (whichBlock == 3)	{ // L shaped block (right pointing)
+		int randNum = 5;
+		blocks[randNum-2][1] = 'A';
+		blocks[randNum-1][1] = 'A';
+		blocks[randNum][1] = 'A';
+		blocks[randNum-2][0] = 'A';
+		isAlive[randNum-2][1] = true;
+		isAlive[randNum-1][1] = true;
+		isAlive[randNum][1] = true;
+		isAlive[randNum-2][0] = true;
+	}
+
+	if (whichBlock == 4)	{ // line block
+		int randNum = 5;
+		blocks[randNum-3][0] = 'A';
+		blocks[randNum-2][0] = 'A';
+		blocks[randNum-1][0] = 'A';
+		blocks[randNum][0] = 'A';
+		isAlive[randNum-3][0] = true;
+		isAlive[randNum-2][0] = true;
+		isAlive[randNum-1][0] = true;
+		isAlive[randNum][0] = true;
+	}
+
+	if (whichBlock == 5)	{ // right skew
+		int randNum = 5;
+		blocks[randNum-1][1] = 'A';
+		blocks[randNum][1] = 'A';
+		blocks[randNum][0] = 'A';
+		blocks[randNum+1][0] = 'A';
+		isAlive[randNum-1][1] = true;
+		isAlive[randNum][1] = true;
+		isAlive[randNum][0] = true;
+		isAlive[randNum+1][0] = true;
+	}
+
+	if (whichBlock == 6)	{ // left skew
+		int randNum = 5;
+		blocks[randNum][0] = 'A';
+		blocks[randNum+1][0] = 'A';
+		blocks[randNum+1][1] = 'A';
+		blocks[randNum+2][1] = 'A';
+		isAlive[randNum][0] = true;
+		isAlive[randNum+1][0] = true;
+		isAlive[randNum+1][1] = true;
+		isAlive[randNum+2][1] = true;
+	}
 }
 
 void Frontier::move(int a, int b, int c, int d)	{
@@ -305,7 +351,7 @@ void Frontier::turn()	{
 	char currentMove = getch(); // this will grab a character on istream at this moment if there's anything to grab
 	endwin();  // end curses mode
 	
-	if (currentMove == 'a')	{ 
+	if (currentMove == 'a')	{  // if i want to move to the left
 		cout << "I'm moving to the left!\n";
 		for (int i = 0; i < WIDTH; ++i)	{
 			for (int j = HEIGHT-1; j >= 0; --j)	{ // this way I will never propagate a movement unintended
@@ -321,7 +367,7 @@ void Frontier::turn()	{
 		}
 	}
 
-	if (currentMove == 'd')	{
+	if (currentMove == 'd')	{ // if i want to move to the right
 		cout << "I'm moving to the right!\n";
 		for (int i = WIDTH-1; i >= 0; --i)	{
 			for (int j = HEIGHT-1; j >= 0; --j)	{
@@ -335,11 +381,25 @@ void Frontier::turn()	{
 		}
 	}
 
+	if (currentMove == 's')	{ // implementation of fastfall
+		// this is also a bandage solution, true fastfall has a bug where if I do it on the farthest left
+		// something weird happens and I land somewhere in the middle (no clue how that happens)
+		cout << "i wanna fastfall!\n";
+		if (isAllowed(2))	{
+			moveAllAlive(2); // is this gonna be a problem with drop?
+		}
+	}
+
+
 	// TODO:
-	// Implement a fast fall using W
+	// implement the movement so it's true to tetris if possible
+	// Implement a CORRECT fast fall bound to s
+	// Implement rotations (use a different function for that)
+	// 	Bind the rotations to q and e
 
 	// lets handle the drop down of all alive blocks
 	drop();
+
 
 	// finally, lets handle the case where I need to clean up and shift the lines down
 	// this isn't the best solution but it will work

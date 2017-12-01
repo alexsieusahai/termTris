@@ -3,7 +3,7 @@
 const int WIDTH = 10;
 const int HEIGHT = 12;
 const int TIME_TO_WAIT = 10; // units are in tenths of a second
-const int NUM_BLOCKS = 2;
+const int NUM_BLOCKS = 5;
 
 #include <string>
 

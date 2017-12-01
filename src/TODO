@@ -1,8 +1,10 @@
 What do I need to do?
 
-- Implement the rest of the tetronimos
-- Implement fastfall
 - Implement rotation of the tetronimos
+- Fix the randInts for all the tetronimos (how does tetris do it? emulate them)
+- Show the player where is tetronimo is going to land if he fastfalls
+- Implement tetronimo storing
+- Implement correct fastfall 
 - Implement gameover
 - Implement pause screen
 - Make the code not shit
