@@ -52,7 +52,7 @@ void Frontier::spawnBlock()	{
 	int whichBlock = rand()%NUM_BLOCKS;
 
 	// for testing purposes...
-	whichBlock = 1;
+	whichBlock = 2;
 	cout << "spawning a block!\n";
 	
 	// now put the raw implementation of the blocks here
@@ -71,18 +71,30 @@ void Frontier::spawnBlock()	{
 		isAlive[randNum+1][1] = true;
 	}
 	
-	// t shaped block
+	// T shaped block
 	if (whichBlock == 1)	{
-		//int randNum = rand()%(WIDTH-3);
-		int randNum = 5;
-		blocks[randNum-1][2] = 'A';
-		blocks[randNum][2] = 'A';
-		blocks[randNum+1][2] = 'A';
+		int randNum = rand()%(WIDTH-3);
+		blocks[randNum-1][1] = 'A';
 		blocks[randNum][1] = 'A';
-		isAlive[randNum-1][2] = true;
-		isAlive[randNum][2] = true;
-		isAlive[randNum+1][2] = true;
+		blocks[randNum+1][1] = 'A';
+		blocks[randNum][0] = 'A';
+		isAlive[randNum-1][1] = true;
 		isAlive[randNum][1] = true;
+		isAlive[randNum+1][1] = true;
+		isAlive[randNum][0] = true;
+	}
+
+	if (whichBlock == 2)	{ // L shaped block (left pointing)
+		//int randNum = rand()%(WIDTH-4); // this is wrong; gives a seg fault
+		int randNum = 5;
+		blocks[randNum-2][1] = 'A';
+		blocks[randNum-1][1] = 'A';
+		blocks[randNum][1] = 'A';
+		blocks[randNum][0] = 'A';
+		isAlive[randNum-2][1] = true;
+		isAlive[randNum-1][1] = true;
+		isAlive[randNum][1] = true;
+		isAlive[randNum][0] = true;
 	}
 
 }
@@ -177,7 +189,7 @@ void Frontier::cleanLines()	{
 void Frontier::fillLine()	{ 
 	// a function used to speed up testing time
 	// it will fill the farthest line downwards with a bunch of dead A's
-	for (int i = 0; i < WIDTH-1; ++i)	{
+	for (int i = 0; i < WIDTH-3; ++i)	{
 		blocks[i][HEIGHT-1] = 'A';
 	}
 }
