@@ -2,14 +2,16 @@
 
 const int WIDTH = 10;
 const int HEIGHT = 12;
-const int TIME_TICKS = 100000;
+const int TIME_TO_WAIT = 10; // units are in tenths of a second
 
 #include <vector>
 
 #define FRONTIER_H
 
 class Frontier  {
+
     char blocks[WIDTH][HEIGHT];
+
 public:
     // variables 
     bool shouldSpawn;
