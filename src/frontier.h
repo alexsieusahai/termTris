@@ -3,8 +3,9 @@
 const int WIDTH = 10;
 const int HEIGHT = 12;
 const int TIME_TO_WAIT = 10; // units are in tenths of a second
+const int NUM_BLOCKS = 2;
 
-#include <vector>
+#include <string>
 
 #define FRONTIER_H
 
@@ -31,6 +32,12 @@ public:
     void cleanLines();
     void deleteAndShiftLine(int);
     void fillLine();
+    void moveAllAlive(int);
+    bool isAllowed(int);
+    	// instructions for isAllowed and moveAllALive
+	// 	Pass in 0 to check left movement
+	// 	Pass 1n 1 to check right movement
+	// 	Pass in 2 to check down movement
 };
 
 #endif

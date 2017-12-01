@@ -1,5 +1,6 @@
 #include <iostream>
 #include <ncurses.h> // for handling input, arduino.h will provide similar functionality (I'm making sure of that)
+#include <cstdlib> // for rand()
 
 #include "frontier.h"
 
@@ -45,10 +46,45 @@ void Frontier::setAllDead()	{
 void Frontier::spawnBlock()	{
 	// first, spawn a block by dropping some character onto the top of the board
 	// TODO:
-	// implement some random function to drop it randomly
 	// after the above is implemented, make sure to GAME OVER if the spot where we spawned the tetronimo is covered
-	blocks[WIDTH/2][0] = 'A';
-	isAlive[WIDTH/2][0] = true;
+	// spawn some random kind of block (have to implement a hasMoved array and check it otherwise move will not work)
+	
+	int whichBlock = rand()%NUM_BLOCKS;
+
+	// for testing purposes...
+	whichBlock = 1;
+	cout << "spawning a block!\n";
+	
+	// now put the raw implementation of the blocks here
+	// NOTE: Very unsure about the bounds on the block, kind of rushing here so lets just go with this then fix it later
+	
+	// cube block
+	if (whichBlock == 0)	{
+		int randNum = rand()%(WIDTH-2);
+		blocks[randNum][0] = 'A';
+		blocks[randNum][1] = 'A';
+		blocks[randNum+1][0] = 'A';
+		blocks[randNum+1][1] = 'A';
+		isAlive[randNum][0] = true;
+		isAlive[randNum][1] = true;
+		isAlive[randNum+1][0] = true;
+		isAlive[randNum+1][1] = true;
+	}
+	
+	// t shaped block
+	if (whichBlock == 1)	{
+		//int randNum = rand()%(WIDTH-3);
+		int randNum = 5;
+		blocks[randNum-1][2] = 'A';
+		blocks[randNum][2] = 'A';
+		blocks[randNum+1][2] = 'A';
+		blocks[randNum][1] = 'A';
+		isAlive[randNum-1][2] = true;
+		isAlive[randNum][2] = true;
+		isAlive[randNum+1][2] = true;
+		isAlive[randNum][1] = true;
+	}
+
 }
 
 void Frontier::move(int a, int b, int c, int d)	{
@@ -69,30 +105,36 @@ void Frontier::move(int a, int b, int c, int d)	{
 
 void Frontier::drop()	{
 	// drop all blocks 1 step below if they are alive
-	//
-	// NOTE:
-	// There's an error with this logic for tetronimos that aren't one square; I'd end up moving some parts of the tetronimo down
-	// I'd have to fix this...
-	//
+	// might be a breaking point later
+	
+	bool shouldContinue = true;
 	for (int i = 0; i < WIDTH; ++i)	{
 		for (int j = HEIGHT-1; j >= 0; --j)	{
-			if (isAlive[i][j])	{ // only drop a block if it's considered to be alive
-				// alright, so if it's alive i need to decide whether to continue to drop it or to stop it from moving
-				// first check to see if I'm going to be out of bounds on the next move
-				if (j != HEIGHT-1)	{ // if it's sitting on the very bottom, which means i shouldn't be able to continue moving
+			if (shouldContinue)	{
+				if (isAlive[i][j])	{ // only drop a block if it's considered to be alive
+					// alright, so if it's alive i need to decide whether to continue to drop it or to stop it from moving
+					// first check to see if I'm going to be out of bounds on the next move
+					if (j != HEIGHT-1)	{ // if it's sitting on the very bottom, which means i shouldn't be able to continue moving
 
-					// okay so I know it's not at the bottom, but I have to account for collision with other blocks now
-					if (blocks[i][j+1] != '.')	{ // if it's not empty
-						//cout << "I'm going to collide if I move down, so I'm just gonna stop...\n";
-						setAllDead(); // kill all tetronimos
+						// okay so I know it's not at the bottom, but I have to account for collision with other blocks now
+						if (blocks[i][j+1] != '.')	{ // if it's not empty
+							//cout << "I'm going to collide if I move down, so I'm just gonna stop...\n";
+							setAllDead(); // kill all tetronimos
+						} else	{
+							//cout << "i'm dropping " << i << ' ' << j << '\n';
+							// handle movement here
+							if (isAllowed(2))	{ // checking if downward movement is allowed
+								cout << "I am executing moveAllAlive(2) to move all down by 2!\n";
+								moveAllAlive(2);
+								shouldContinue = false;
+								break;
+							}
+						}
+
 					} else	{
-						//cout << "i'm dropping " << i << ' ' << j << '\n';
-						move(i,j,i,j+1);
+						//cout << "I can't move down!\n";
+						setAllDead();  // if our tetronimo can't move farther for any block, then just set all to dead
 					}
-
-				} else	{
-					//cout << "I can't move down!\n";
-					setAllDead();  // if our tetronimo can't move farther for any block, then just set all to dead
 				}
 			}
 		}
@@ -139,6 +181,96 @@ void Frontier::fillLine()	{
 		blocks[i][HEIGHT-1] = 'A';
 	}
 }
+
+bool Frontier::isAllowed(int move)	{
+	// this is a bandaid fix
+	// for every single item  in the list, check if the movement is possible
+	// if it's possible FOR EVERY SINGLE BLOCK, then return true
+	// otherwise return false
+	//
+	//BUGS:
+	// I don't think this works
+	
+	for (int i = 0; i < WIDTH; ++i)	{
+		for (int j = 0; j < HEIGHT; ++j)	{
+			if (isAlive[i][j])	{
+				if (move == 0)	{ // left movement
+					cout << "isAllowed is checking left movement!\n";
+					if (!isAlive[i-1][j] && i > 0)	{ // if the block we're checking isn't part of the tetronimo, so we'll just end up checking the relevant edges
+						if (blocks[i-1][j] != '.')	{
+							cout << "out of bounds!\n";
+							return false;
+						}
+					} 
+					if (i - 1 < 0)	{
+						return false;
+					}
+				} else if (move == 1)	{ // right movement
+					if (!isAlive[i+1][j] && i < WIDTH-1)	{
+						if (blocks[i+1][j] != '.')	{
+							cout << "out of bounds!\n";
+							return false;
+						}
+					}
+					if (i + 1 > WIDTH-1)	{
+						cout << "out of bounds; attempting right movement!\n";
+						return false;
+					}
+				} else if (move == 2)	{ // downwards movement
+					if (!isAlive[i][j+1])	{
+						if (blocks[i][j+1] != '.')	{
+							cout << "out of bounds! failed on the downward movement!\n";
+							// if the downwards movement isn't allowed, kill all blocks
+							setAllDead();
+							return false;
+						}
+					}
+				}
+			}
+		}
+	}
+	cout << "this movement appears to be allowed!\n";
+	return true;
+}
+
+void Frontier::moveAllAlive(int direction)	{
+	// direction mapping
+	// direction = 0 => left
+	// direction = 1 => right
+	// direction = 2 => down
+	
+	// this function goes through the entire grid, then moves all alive blocks to the specified direction
+	// I am assuming that this is allowed; I have checked it before with isAllowed(direction)
+	
+	// have to walk through the array different ways depending on which direction i'm going
+	if (direction == 0)	{ // left movement
+		for (int i = 0; i < WIDTH; ++i)	{
+			for (int j = HEIGHT-1; j >= 0; --j)	{ // this way I will never propagate a movement unintended
+				if (isAlive[i][j])	{
+					move(i,j,i-1,j);
+				}
+			}
+		}
+	}
+	if (direction == 1)	{ // right movement
+		for (int i = WIDTH-1; i >= 0; --i)	{
+			for (int j = HEIGHT-1; j >= 0; --j)	{
+				if (isAlive[i][j])	{
+					move(i,j,i+1,j);
+				}
+			}
+		}
+	}
+	if (direction == 2)	{
+		for (int i = 0; i < WIDTH; ++i)	{
+			for (int j = HEIGHT-1; j >= 0; --j)	{
+				if (isAlive[i][j])	{
+					move(i,j,i,j+1);
+				}
+			}
+		}
+	}
+}
 	
 
 void Frontier::turn()	{
@@ -160,24 +292,32 @@ void Frontier::turn()	{
 	halfdelay(TIME_TO_WAIT); // this sets how long getch() will wait for something to appear on istream before it just returns -1 (fail state)
 	char currentMove = getch(); // this will grab a character on istream at this moment if there's anything to grab
 	endwin();  // end curses mode
-
+	
 	if (currentMove == 'a')	{ 
-		//cout << "I'm moving to the left!\n";
+		cout << "I'm moving to the left!\n";
 		for (int i = 0; i < WIDTH; ++i)	{
 			for (int j = HEIGHT-1; j >= 0; --j)	{ // this way I will never propagate a movement unintended
-				if (isAlive[i][j] && i > 0 && blocks[i-1][j] == '.')	{
-					move(i,j,i-1,j);
+				if (isAllowed(0))	{ // BAD: BANDAGE FIX TO PROBLEM, ADDS UNECESSARY SLOWDOWN
+					// please refer to isAllowed documentation on header file for instructions on using isAllowed(int)A
+					// even better, please fix later
+					if (isAlive[i][j] && i > 0 && blocks[i-1][j] == '.')	{
+						moveAllAlive(0);
+						break;
+					}
 				}
 			}
 		}
 	}
 
 	if (currentMove == 'd')	{
-		//cout << "I'm moving to the right!\n";
+		cout << "I'm moving to the right!\n";
 		for (int i = WIDTH-1; i >= 0; --i)	{
 			for (int j = HEIGHT-1; j >= 0; --j)	{
-				if (isAlive[i][j] && i < WIDTH-1 && blocks[i+1][j] == '.')	{
-					move(i,j,i+1,j);
+				if (isAllowed(1))	{
+					if (isAlive[i][j] && i < WIDTH-1 && blocks[i+1][j] == '.')	{
+						moveAllAlive(1);
+						break;
+					}
 				}
 			}
 		}
