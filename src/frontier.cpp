@@ -5,6 +5,9 @@
 
 #include "frontier.h"
 
+// NOTE TO WHOEVER READS THIS CODE AT THIS TIME
+// I chose to be wasteful with my code in order to make porting it onto an arduino extremely easy, in the near future data structures in stl
+
 // LIST OF BUGS:
 // 	it appears that a segmentation fault occurs when I try to fall twice occasionally with the w move
 
@@ -16,15 +19,22 @@ void Frontier::printFrontier()	{
 	// If it's alive, draw the grid as some color discriminating on if they are alive A's, dead A's, or just empty dots ('.')
 	// Eventually we can make blocks hold a block structure, which would contain its color (and we should refractor so it holds the alive attribute as well)
 	
+	generateGhost();
+	cout << "i'm running printFrontier!\n";
 	// print line by line
 	for (int j = 0; j < HEIGHT; ++j)	{ 
 		for (int i = 0; i < WIDTH; ++i)	{
-			cout << blocks[i][j];
+			if (ghostGrid[i][j] && blocks[i][j] == '.')	{
+				cout << '*';
+			} else	{
+				cout << blocks[i][j];
+			}
 		}
 		cout << '\n'; // after printing out one line, print out a new line
 	}
 	cout << '\n'; // so the frontiers printed one after the other have a line between them
 	cout << flush;
+	resetGhostGrid();
 }
 
 void Frontier::fillFrontierWithDots()	{
@@ -47,12 +57,104 @@ void Frontier::setAllDead()	{
 	shouldSpawn = true;
 }
 
+void Frontier::resetGhostGrid()	{
+	for (int i = 0; i < WIDTH; ++i)	{
+		for (int j = 0; j < HEIGHT; ++j)	{
+			ghostGrid[i][j] = false;
+		}
+	}
+}
+
+void Frontier::generateGhost()	{
+	// first, generate a ghost where our piece is
+	int counter = 0;
+	for (int i = 0; i < WIDTH; ++i)	{
+		for (int j = 0; j < HEIGHT; ++j)	{
+			if (isAlive[i][j])	{
+				ghostGrid[i][j] = true;
+				//cout << "ghostGrid for " << i << ' ' << j << " is true!\n";
+				counter++;
+			}
+		}
+	}
+	cout << counter << endl;
+	if (counter == 0)	{ // if none of the blocks were alive
+		return; 
+	}
+	// now, keep dropping it down until you can't anymore
+	while (true)	{
+		for (int i = 0; i < WIDTH; ++i)	{
+			for (int j = 0; j < HEIGHT; ++j)	{
+				if (ghostGrid[i][j])	{
+					if (j+1 >= HEIGHT)	{
+						return;
+					} else	{
+						if (!isAlive[i][j+1])	{
+							if (blocks[i][j+1] != '.')	{
+								return;
+							}
+						}
+					}
+				}
+			}
+		}
+		vector<int> xToFill;
+		vector<int> yToFill;
+		for (int i = 0; i < WIDTH; ++i)	{
+			for (int j = 0; j < HEIGHT; ++j)	{
+				if (ghostGrid[i][j])	{
+					ghostGrid[i][j] = false;
+					xToFill.push_back(i);
+					yToFill.push_back(j+1);
+				}
+			}
+		}
+
+		while (!xToFill.empty())	{
+			int x = xToFill.back();
+			xToFill.pop_back();
+			int y = yToFill.back();
+			yToFill.pop_back();
+			ghostGrid[x][y] = true;
+		}
+	}
+}
+
+void Frontier::moveToGhost()	{
+	generateGhost();
+	cout << "got here!\n";
+	char temp;
+	vector<int> newX,newY;
+	for (int i = 0; i < WIDTH; ++i)	{
+		for (int j = 0; j < HEIGHT; ++j)	{
+			if (isAlive[i][j])	{
+				temp = blocks[i][j];
+				isAlive[i][j] = false;
+				blocks[i][j] = '.';
+			}
+			if (ghostGrid[i][j])	{
+				newX.push_back(i);
+				newY.push_back(j);
+			}
+		}
+	}
+	resetGhostGrid();
+	while (!newX.empty())	{
+		int x = newX.back();
+		newX.pop_back();
+		int y = newY.back();
+		newY.pop_back();
+		blocks[x][y] = temp;
+	}
+	shouldSpawn = true;
+}
+
 bool Frontier::isInBounds(int i, int j) {
-    cout << "this is what was passed to isInBounds " << i << ' ' << j << endl;
+    //cout << "this is what was passed to isInBounds " << i << ' ' << j << endl;
     if (i >= 0 && i < WIDTH && j < HEIGHT && j > 0) {
-        cout << "what you're trying to do is fine!\n";
+        //cout << "what you're trying to do is fine!\n";
     } else  {
-        cout << "what you're trying to do is out of bounds!\n";
+        //cout << "what you're trying to do is out of bounds!\n";
     }
     return (i >= 0 && i < WIDTH && j < HEIGHT && j >= 0);
 }
@@ -62,8 +164,10 @@ void Frontier::checkRotationAndRotateAllAlive()	{
 	// if it is valid, then the blocks are rotated
 	// let 0 be counterclockwise
 	// let 1 be clockwise
-	
-    cout << "my origin coordinates are " << originX << ' ' << originY << endl;
+    if (whichBlock == 0)	{ // it's a cube
+	    return; // don't rotate it at all
+    }
+    //cout << "my origin coordinates are " << originX << ' ' << originY << endl;
     bool shouldRotate = true; // assume it's a valid move, then search for a counterexample if false
 	bool breakLoop = false;
 	char temp = 'A'; // replace it later once we find one block that is alive
@@ -79,21 +183,21 @@ void Frontier::checkRotationAndRotateAllAlive()	{
 				if (!isInBounds(originX+(j-originY), originY-(i-originX)))	{
 					// if it's out of bounds, then set shouldRotate to false
 					shouldRotate = false;
-					cout << "set shouldRotate to false because it was out of bounds!\n";
+					//cout << "set shouldRotate to false because it was out of bounds!\n";
 					breakLoop = true;
 					break;
 				} else	{
 					// if it's in bounds, check to see if the rotation spot desired is covered
 					if (blocks[originX+(j-originY)][originY-(i-originX)] != '.' && !isAlive[originX+(j-originY)][originY-(i-originX)])	{
 						// if the spot is covered, don't allow the rotation
-						cout << "set shouldRotate to false because the desired block was occupied!\n";
+						//cout << "set shouldRotate to false because the desired block was occupied!\n";
 						shouldRotate = false;
 						breakLoop = true;
-						cout << "desired block is occupied!\n" <<
-							"the block there is " << blocks[originX+(j-originY)][originY-(i-originX)] << '\n' << 
-							"the block coordinates are " << 
-							originX+(j-originY) << ' ' <<
-							originY-(i-originX) << '\n';
+						//cout << "desired block is occupied!\n" <<
+							//"the block there is " << blocks[originX+(j-originY)][originY-(i-originX)] << '\n' << 
+							//"the block coordinates are " << 
+							//originX+(j-originY) << ' ' <<
+							//originY-(i-originX) << '\n';
 						break;
 					}
 				}
@@ -109,9 +213,9 @@ void Frontier::checkRotationAndRotateAllAlive()	{
 					if (isAlive[i][j])  {
 						blocks[i][j] = '.'; // set the old position to empty
 						isAlive[i][j] = false; // kill the old block
-						cout << "I placed the block " << i << ' ' << j <<
-							" here " << originX+(j-originY) << ' '
-							<< originY-(i-originX) << '\n';
+						//cout << "I placed the block " << i << ' ' << j <<
+							//" here " << originX+(j-originY) << ' '
+							//<< originY-(i-originX) << '\n';
 						
 						// fill a vector with the coordinates then unpack it later
 						xToUnpack.push_back(i);
@@ -137,123 +241,122 @@ void Frontier::spawnBlock()	{
 	// after the above is implemented, make sure to GAME OVER if the spot where we spawned the tetronimo is covered
 	// spawn some random kind of block (have to implement a hasMoved array and check it otherwise move will not work)
 	
-	int whichBlock = rand()%NUM_BLOCKS;
+	whichBlock = rand()%NUM_BLOCKS; // arduino has a random function
 
 	// now put the raw implementation of the blocks here
 	// NOTE: Switch to normal tetris implementation of blocks
 	
-	// cube block
-	if (whichBlock == 0)	{
-		int randNum = 5;
-		blocks[randNum][0] = 'Y';
-		blocks[randNum][1] = 'Y';
-		blocks[randNum+1][0] = 'Y';
-		blocks[randNum+1][1] = 'Y';
-		isAlive[randNum][0] = true;
-		isAlive[randNum][1] = true;
-		isAlive[randNum+1][0] = true;
-		isAlive[randNum+1][1] = true;
+	if (whichBlock == 0)	{ //square block
+		int spawnX = 5;
+		blocks[spawnX][0] = 'Y';
+		blocks[spawnX][1] = 'Y';
+		blocks[spawnX+1][0] = 'Y';
+		blocks[spawnX+1][1] = 'Y';
+		isAlive[spawnX][0] = true;
+		isAlive[spawnX][1] = true;
+		isAlive[spawnX+1][0] = true;
+		isAlive[spawnX+1][1] = true;
 		// here the origin doesn't matter since rotation doesn't change the orientation of the block 
 	}
 	
 	if (whichBlock == 1)	{ // T shaped block
-		int randNum = rand()%(WIDTH-3);
+		int spawnX = 5;
 		// spawn the block graphics
-		blocks[randNum-1][1] = 'P';
-		blocks[randNum][1] = 'P';
-		blocks[randNum+1][1] = 'P';
-		blocks[randNum][0] = 'P';
+		blocks[spawnX-1][1] = 'P';
+		blocks[spawnX][1] = 'P';
+		blocks[spawnX+1][1] = 'P';
+		blocks[spawnX][0] = 'P';
 		// set the game logic
-		isAlive[randNum-1][1] = true;
-		isAlive[randNum][1] = true;
-		isAlive[randNum+1][1] = true;
-		isAlive[randNum][0] = true;
+		isAlive[spawnX-1][1] = true;
+		isAlive[spawnX][1] = true;
+		isAlive[spawnX+1][1] = true;
+		isAlive[spawnX][0] = true;
 
 		// set the origin
-		originX = randNum;
+		originX = spawnX;
 		originY = 1;
 	}
 
 	if (whichBlock == 2)	{ // L shaped block (left pointing)
-		//int randNum = rand()%(WIDTH-4); // this is wrong; gives a seg fault
-		int randNum = 5;
-		blocks[randNum-2][1] = 'B';
-		blocks[randNum-1][1] = 'B';
-		blocks[randNum][1] = 'B';
-		blocks[randNum][0] = 'B';
-		isAlive[randNum-2][1] = true;
-		isAlive[randNum-1][1] = true;
-		isAlive[randNum][1] = true;
-		isAlive[randNum][0] = true;
+		//int spawnX = rand()%(WIDTH-4); // this is wrong; gives a seg fault
+		int spawnX = 5;
+		blocks[spawnX-2][1] = 'B';
+		blocks[spawnX-1][1] = 'B';
+		blocks[spawnX][1] = 'B';
+		blocks[spawnX][0] = 'B';
+		isAlive[spawnX-2][1] = true;
+		isAlive[spawnX-1][1] = true;
+		isAlive[spawnX][1] = true;
+		isAlive[spawnX][0] = true;
 
 		// set the origin
-		originX = randNum-1;
+		originX = spawnX-1;
 		originY = 1;
 	}
 
 	if (whichBlock == 3)	{ // L shaped block (right pointing)
-		int randNum = 5;
-		blocks[randNum-2][1] = 'O';
-		blocks[randNum-1][1] = 'O';
-		blocks[randNum][1] = 'O';
-		blocks[randNum-2][0] = 'O';
-		isAlive[randNum-2][1] = true;
-		isAlive[randNum-1][1] = true;
-		isAlive[randNum][1] = true;
-		isAlive[randNum-2][0] = true;
+		int spawnX = 5;
+		blocks[spawnX-2][1] = 'O';
+		blocks[spawnX-1][1] = 'O';
+		blocks[spawnX][1] = 'O';
+		blocks[spawnX-2][0] = 'O';
+		isAlive[spawnX-2][1] = true;
+		isAlive[spawnX-1][1] = true;
+		isAlive[spawnX][1] = true;
+		isAlive[spawnX-2][0] = true;
 
 		//set the origin
-		originX = randNum-1;
+		originX = spawnX-1;
 		originY = 1;
 	}
 
 	if (whichBlock == 4)	{ // line block
-		int randNum = 5;
-		blocks[randNum-3][0] = 'C';
-		blocks[randNum-2][0] = 'C';
-		blocks[randNum-1][0] = 'C';
-		blocks[randNum][0] = 'C';
-		isAlive[randNum-3][0] = true;
-		isAlive[randNum-2][0] = true;
-		isAlive[randNum-1][0] = true;
-		isAlive[randNum][0] = true;
+		int spawnX = 5;
+		blocks[spawnX-3][0] = 'C';
+		blocks[spawnX-2][0] = 'C';
+		blocks[spawnX-1][0] = 'C';
+		blocks[spawnX][0] = 'C';
+		isAlive[spawnX-3][0] = true;
+		isAlive[spawnX-2][0] = true;
+		isAlive[spawnX-1][0] = true;
+		isAlive[spawnX][0] = true;
 
 		// set the origin, but this rotation is hardcoded to match SRS standard
-		originX = randNum+1;
+		originX = spawnX-1;
 		originY = 0; 
 		// note; rotate them accordingly now
 	}
 
 	if (whichBlock == 5)	{ // green skew
-		int randNum = 5;
-		blocks[randNum-1][1] = 'G';
-		blocks[randNum][1] = 'G';
-		blocks[randNum][0] = 'G';
-		blocks[randNum+1][0] = 'G';
-		isAlive[randNum-1][1] = true;
-		isAlive[randNum][1] = true;
-		isAlive[randNum][0] = true;
-		isAlive[randNum+1][0] = true;
+		int spawnX = 5;
+		blocks[spawnX-1][1] = 'G';
+		blocks[spawnX][1] = 'G';
+		blocks[spawnX][0] = 'G';
+		blocks[spawnX+1][0] = 'G';
+		isAlive[spawnX-1][1] = true;
+		isAlive[spawnX][1] = true;
+		isAlive[spawnX][0] = true;
+		isAlive[spawnX+1][0] = true;
 
 		// set the origin
-		originX = randNum;
+		originX = spawnX;
 		originY = 1;
 
 	}
 
 	if (whichBlock == 6)	{ // red skew
-		int randNum = 5;
-		blocks[randNum][0] = 'R';
-		blocks[randNum+1][0] = 'R';
-		blocks[randNum+1][1] = 'R';
-		blocks[randNum+2][1] = 'R';
-		isAlive[randNum][0] = true;
-		isAlive[randNum+1][0] = true;
-		isAlive[randNum+1][1] = true;
-		isAlive[randNum+2][1] = true;
+		int spawnX = 5;
+		blocks[spawnX][0] = 'R';
+		blocks[spawnX+1][0] = 'R';
+		blocks[spawnX+1][1] = 'R';
+		blocks[spawnX+2][1] = 'R';
+		isAlive[spawnX][0] = true;
+		isAlive[spawnX+1][0] = true;
+		isAlive[spawnX+1][1] = true;
+		isAlive[spawnX+2][1] = true;
 
 		//set the origin
-		originX = randNum+1;
+		originX = spawnX+1;
 		originY = 1;
 
 	}
@@ -359,10 +462,10 @@ bool Frontier::isAllowed(int move)	{
 		for (int j = 0; j < HEIGHT; ++j)	{
 			if (isAlive[i][j])	{
 				if (move == 0)	{ // left movement
-					cout << "isAllowed is checking left movement!\n";
+					//cout << "isAllowed is checking left movement!\n";
 					if (!isAlive[i-1][j] && i > 0)	{ // if the block we're checking isn't part of the tetronimo, so we'll just end up checking the relevant edges
 						if (blocks[i-1][j] != '.')	{
-							cout << "out of bounds!\n";
+							//cout << "out of bounds!\n";
 							return false;
 						}
 					} 
@@ -372,18 +475,18 @@ bool Frontier::isAllowed(int move)	{
 				} else if (move == 1)	{ // right movement
 					if (!isAlive[i+1][j] && i < WIDTH-1)	{
 						if (blocks[i+1][j] != '.')	{
-							cout << "out of bounds!\n";
+							//cout << "out of bounds!\n";
 							return false;
 						}
 					}
 					if (i + 1 > WIDTH-1)	{
-						cout << "out of bounds; attempting right movement!\n";
+						//cout << "out of bounds; attempting right movement!\n";
 						return false;
 					}
-				} else if (move == 2)	{ // downwards movement
+				} else if (move == 2)	{// downwards movement
 					if (!isAlive[i][j+1])	{
 						if (blocks[i][j+1] != '.')	{
-							cout << "out of bounds! failed on the downward movement!\n";
+							//cout << "out of bounds! failed on the downward movement!\n";
 							// if the downwards movement isn't allowed, kill all blocks
 							setAllDead();
 							return false;
@@ -461,10 +564,12 @@ void Frontier::turn()	{
 	noecho(); // I don't want the user to see what he's inputting!
 	halfdelay(TIME_TO_WAIT); // this sets how long getch() will wait for something to appear on istream before it just returns -1 (fail state)
 	char currentMove = getch(); // this will grab a character on istream at this moment if there's anything to grab
+	//cout << "getch() caught " << int(currentMove) << ' ' << currentMove << endl;
 	endwin();  // end curses mode
 	
+	// implementing it more true to tetris
 	if (currentMove == 'a')	{  // if i want to move to the left
-		cout << "I'm moving to the left!\n";
+		//cout << "I'm moving to the left!\n";
 		for (int i = 0; i < WIDTH; ++i)	{
 			for (int j = HEIGHT-1; j >= 0; --j)	{ // this way I will never propagate a movement unintended
 				if (isAllowed(0))	{ // BAD: BANDAGE FIX TO PROBLEM, ADDS UNECESSARY SLOWDOWN
@@ -477,10 +582,11 @@ void Frontier::turn()	{
 				}
 			}
 		}
+		return; //feels more like tetris this way, and more fair
 	}
 
 	if (currentMove == 'd')	{ // if i want to move to the right
-		cout << "I'm moving to the right!\n";
+		//cout << "I'm moving to the right!\n";
 		for (int i = WIDTH-1; i >= 0; --i)	{
 			for (int j = HEIGHT-1; j >= 0; --j)	{
 				if (isAllowed(1))	{
@@ -491,29 +597,35 @@ void Frontier::turn()	{
 				}
 			}
 		}
+		return; //feels more like tetris this way, and more fair
 	}
+
+	if (int(currentMove) == 32)	{ // spacebar has been pressed
+		moveToGhost(); // move the tetronimo to the ghost piece
+		return;
+	}
+
+	// Note to max on the above two functions: 
+	// 	Deprecate 'd' press, and use joystick press for straight up fastfall
+
+	if (currentMove == 'q')	{ // a desire to shift counterclockwise
+		checkRotationAndRotateAllAlive();
+		return; //feels more like tetris this way, and more fair
+	}
+
 
 	if (currentMove == 's')	{ // implementation of fastfall
 		// BUG: this causes segmentation fault sometimes I think
 		// this is also a bandage solution, true fastfall has a bug where if I do it on the farthest left
 		// something weird happens and I land somewhere in the middle (no clue how that happens)
-		cout << "i wanna fastfall!\n";
+		//cout << "i wanna fastfall!\n";
 		if (isAllowed(2))	{
 			drop();
+			return; // so you only drop once
 		}
 	}
 
 
-	// TODO:
-	// implement the movement so it's true to tetris if possible
-	// Implement a CORRECT fast fall bound to s
-	// Implement rotations (use a different function for that)
-	// 	Bind the rotations to q and e
-
-	// lets handle calls to rotation
-	if (currentMove == 'q')	{ // a desire to shift counterclockwise
-		checkRotationAndRotateAllAlive();
-	}
 
 	// lets handle the drop down of all alive blocks
 	drop();
@@ -532,5 +644,6 @@ void Frontier::turn()	{
 	}
 
 	// test stuff here
-	cout << "originX is " << originX << " and originY is " << originY << endl;
+	//cout << "originX is " << originX << " and originY is " << originY << endl;
 }
+

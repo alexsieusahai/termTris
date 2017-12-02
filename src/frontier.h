@@ -2,7 +2,7 @@
 
 const int WIDTH = 10;
 const int HEIGHT = 20;
-const int TIME_TO_WAIT = 10; // units are in tenths of a second
+const int TIME_TO_WAIT = 5; // units are in tenths of a second
 const int NUM_BLOCKS = 7;
 
 #include <string>
@@ -17,8 +17,10 @@ public:
     // variables 
     bool shouldSpawn;
     bool isAlive[WIDTH][HEIGHT];
+    bool ghostGrid[WIDTH][HEIGHT]; // contains locations for where the ghost piece is, and prints it 
     int originX;
     int originY;
+    int whichBlock;
 
 
     //functions
@@ -43,6 +45,9 @@ public:
     void checkRotationAndRotateAllAlive();
     // clockwise rotation
     bool isInBounds(int,int); // checks if the coordinates passed in (i,j) are in bounds
+    void generateGhost(); // generates the ghost piece
+    void resetGhostGrid(); // resets the grid for the ghost piece
+    void moveToGhost();
 };
 
 #endif

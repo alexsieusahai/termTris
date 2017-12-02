@@ -8,6 +8,7 @@ int main()  {
     Frontier io;
     io.fillFrontierWithDots();
     io.setAllDead();
+    io.resetGhostGrid();
 
     // handles game mechanics
     while(true)	{

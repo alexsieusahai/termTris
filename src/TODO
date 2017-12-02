@@ -1,20 +1,15 @@
 What do I need to do?
 
-- Fix the colors so that they're truthful to the game
-- Fix the randInts for all the tetronimos (how does tetris do it? emulate them)
-- Show the player where is tetronimo is going to land if he fastfalls
 - Implement tetronimo storing
-- Implement correct fastfall 
 - Implement gameover
 - Implement pause screen
+- Implement an instructions screen that shows until the player presses enter
 - Make the code not shit
+- Implement a better choice than just placing them in the middle
 
 
-Reserved colors for the board that I need to implement
-Cyan 'C' is for the straight
-Yellow 'Y' is for the cube
-Purple 'P' is for the T
-Green 'G' is for the right skew
-Red 'R' is for the left skew
-Blue 'B' is for the left L
-Orange 'O' is for the right L
+BUGS:
+- When pressing s at the very bottom, sometimes the game glitches out and I can't continue
+
+THINGS I WANT TO IMPROVE:
+- Dropping to the ghost block is very expensive, as generating the ghost appears to be really expensive; is there a way to speed it up?
