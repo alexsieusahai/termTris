@@ -1,6 +1,5 @@
 What do I need to do?
 
-- Implement tetronimo storing
 - Implement gameover
 - Implement pause screen
 - Implement an instructions screen that shows until the player presses enter

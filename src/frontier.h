@@ -5,7 +5,7 @@ const int HEIGHT = 20;
 const int TIME_TO_WAIT = 5; // units are in tenths of a second
 const int NUM_BLOCKS = 7;
 
-#include <string>
+#include <vector>
 
 #define FRONTIER_H
 
@@ -21,6 +21,9 @@ public:
     int originX;
     int originY;
     int whichBlock;
+    int score;
+    int highScore;
+    std::vector<int> blockVec;
 
 
     //functions
@@ -48,6 +51,9 @@ public:
     void generateGhost(); // generates the ghost piece
     void resetGhostGrid(); // resets the grid for the ghost piece
     void moveToGhost();
+    void initializeGame();
+    bool checkGameOver();
+    void restart();
 };
 
 #endif

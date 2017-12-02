@@ -30,7 +30,41 @@ void Frontier::printFrontier()	{
 				cout << blocks[i][j];
 			}
 		}
+		if (j == 1)	{
+			cout << "\tYOUR CURRENT SCORE IS " << score;
+		}
+		if (j == 2)	{
+			cout << "\tYOUR HIGH SCORE IS " << highScore;
+		}
+		if (j == 6)	{
+			cout << "\tNEXT BLOCK:";
+		}
+		if (j == 7)	{
+			if (blockVec.back() == 0)	{
+				cout << "\tSQUARE";
+			}
+			if (blockVec.back() == 1)	{
+				cout << "\tT";
+			}
+			if (blockVec.back() == 2)	{
+				cout << "\tLeft Pointing L";
+			}
+			if (blockVec.back() == 3)	{
+				cout << "\tRight Pointing L";
+			}
+			if (blockVec.back() == 4)	{
+				cout << "\tLine Block";
+			}
+			if (blockVec.back() == 5)	{
+				cout << "\tGreen Skew";
+			}
+			if (blockVec.back() == 6)	{
+				cout << "\tRed Skew";
+			}
+		}
+		
 		cout << '\n'; // after printing out one line, print out a new line
+		// show the user what the next block is going to be
 	}
 	cout << '\n'; // so the frontiers printed one after the other have a line between them
 	cout << flush;
@@ -234,14 +268,28 @@ void Frontier::checkRotationAndRotateAllAlive()	{
 	}
 }
 
+void Frontier::initializeGame()	{ // handles initialization of game
+	score = 0;
+	blockVec.push_back(rand()%NUM_BLOCKS);
+	score = 0;
+	// print the game instructions then wait for the user to input enter once he's read the instructions
+	cout << "Welcome to Terminal Tetris!\nMade by ItsPax.\nUse WASD To move, and press Q to rotate the blocks. Press P to pause, and R to restart.\nPlease press enter to start the game!\n";;
+	cin.get(); // effectively waits for the player to press enter
+	// NOTE TO MAX 
+	// 	Just forget about this function, ignore it entirely
+}
+
 	
 void Frontier::spawnBlock()	{
 	// first, spawn a block by dropping some character onto the top of the board
 	// TODO:
 	// after the above is implemented, make sure to GAME OVER if the spot where we spawned the tetronimo is covered
 	// spawn some random kind of block (have to implement a hasMoved array and check it otherwise move will not work)
-	
-	whichBlock = rand()%NUM_BLOCKS; // arduino has a random function
+	whichBlock = blockVec.back();
+	blockVec.pop_back();
+	blockVec.push_back(rand()%NUM_BLOCKS);
+	// NOTE TO MAX:
+	// 	Ignore the above entirely and just set whichBlock = rand()%NUM_BLOCKS
 
 	// now put the raw implementation of the blocks here
 	// NOTE: Switch to normal tetris implementation of blocks
@@ -362,6 +410,16 @@ void Frontier::spawnBlock()	{
 	}
 }
 
+bool Frontier::checkGameOver()	{
+	for (int i = 3; i < 8; ++i)	{
+		if (blocks[i][0] != '.' && !isAlive[i][0])	{
+			cout << "GAME OVER!\n\n\n";
+			return true;
+		}
+	}
+	return false;
+}
+
 void Frontier::move(int a, int b, int c, int d)	{
 	// moves one ALIVE block to a DEAD space (if it doesn't do this, game logic breaks)
 	
@@ -444,6 +502,10 @@ void Frontier::cleanLines()	{
 			}
 		}
 		if (counter == WIDTH)	{
+			score++;
+			if (score > highScore)	{
+				highScore = score;
+			}
 			deleteAndShiftLine(j);
 		}
 	}
@@ -625,6 +687,10 @@ void Frontier::turn()	{
 		}
 	}
 
+	if (currentMove == 'r')	{
+		restart();
+	}
+
 
 
 	// lets handle the drop down of all alive blocks
@@ -643,7 +709,19 @@ void Frontier::turn()	{
 		shouldSpawn = false;
 	}
 
-	// test stuff here
-	//cout << "originX is " << originX << " and originY is " << originY << endl;
+	// finally check for game over
+	if (checkGameOver())	{ // not conventional tetris game over but whatever
+		//cout << "Initialzing game over screen...\n";
+		restart();
+	}
 }
 
+void Frontier::restart()	{ // what I'm going to do here is initialize everything that I initialized at the beginning, then it's effectively a restart
+	if (score > highScore)	{
+		highScore = score;
+	}
+	fillFrontierWithDots();
+	setAllDead();
+	initializeGame();
+	resetGhostGrid();
+}
