@@ -1,3 +1,4 @@
 Tetris in the terminal!
 Made by Alexander Sieusahai over the course of a couple days.
 Uses ncurses library for handling input, and iostream for handling output.
+Use WASD to move, and Q to rotate.
