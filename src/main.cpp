@@ -8,7 +8,6 @@ int main()  {
     Frontier io;
     io.fillFrontierWithDots();
     io.setAllDead();
-    io.fillLine();
 
     // handles game mechanics
     while(true)	{

@@ -66,6 +66,7 @@ void Frontier::checkRotationAndRotateAllAlive()	{
     cout << "my origin coordinates are " << originX << ' ' << originY << endl;
     bool shouldRotate = true; // assume it's a valid move, then search for a counterexample if false
 	bool breakLoop = false;
+	char temp = 'A'; // replace it later once we find one block that is alive
 
 	// lets search all blocks to see if we can find a counterexample
 	for (int i = 0; i < WIDTH; ++i)	{
@@ -74,6 +75,7 @@ void Frontier::checkRotationAndRotateAllAlive()	{
 			if (isAlive[i][j])	{
 				// now check the rotation
 				// first check to see if the rotation is even in bounds
+				temp = blocks[i][j];
 				if (!isInBounds(originX+(j-originY), originY-(i-originX)))	{
 					// if it's out of bounds, then set shouldRotate to false
 					shouldRotate = false;
@@ -122,7 +124,7 @@ void Frontier::checkRotationAndRotateAllAlive()	{
 			xToUnpack.pop_back();
 			int j = yToUnpack.back();
 			yToUnpack.pop_back();
-			blocks[originX+(j-originY)][originY-(i-originX)] = 'A'; // create new block
+			blocks[originX+(j-originY)][originY-(i-originX)] = temp; // create new block
 			isAlive[originX+(j-originY)][originY-(i-originX)] = true; // make it alive
 		}
 	}
@@ -143,10 +145,10 @@ void Frontier::spawnBlock()	{
 	// cube block
 	if (whichBlock == 0)	{
 		int randNum = 5;
-		blocks[randNum][0] = 'A';
-		blocks[randNum][1] = 'A';
-		blocks[randNum+1][0] = 'A';
-		blocks[randNum+1][1] = 'A';
+		blocks[randNum][0] = 'Y';
+		blocks[randNum][1] = 'Y';
+		blocks[randNum+1][0] = 'Y';
+		blocks[randNum+1][1] = 'Y';
 		isAlive[randNum][0] = true;
 		isAlive[randNum][1] = true;
 		isAlive[randNum+1][0] = true;
@@ -157,10 +159,10 @@ void Frontier::spawnBlock()	{
 	if (whichBlock == 1)	{ // T shaped block
 		int randNum = rand()%(WIDTH-3);
 		// spawn the block graphics
-		blocks[randNum-1][1] = 'A';
-		blocks[randNum][1] = 'A';
-		blocks[randNum+1][1] = 'A';
-		blocks[randNum][0] = 'A';
+		blocks[randNum-1][1] = 'P';
+		blocks[randNum][1] = 'P';
+		blocks[randNum+1][1] = 'P';
+		blocks[randNum][0] = 'P';
 		// set the game logic
 		isAlive[randNum-1][1] = true;
 		isAlive[randNum][1] = true;
@@ -175,10 +177,10 @@ void Frontier::spawnBlock()	{
 	if (whichBlock == 2)	{ // L shaped block (left pointing)
 		//int randNum = rand()%(WIDTH-4); // this is wrong; gives a seg fault
 		int randNum = 5;
-		blocks[randNum-2][1] = 'A';
-		blocks[randNum-1][1] = 'A';
-		blocks[randNum][1] = 'A';
-		blocks[randNum][0] = 'A';
+		blocks[randNum-2][1] = 'B';
+		blocks[randNum-1][1] = 'B';
+		blocks[randNum][1] = 'B';
+		blocks[randNum][0] = 'B';
 		isAlive[randNum-2][1] = true;
 		isAlive[randNum-1][1] = true;
 		isAlive[randNum][1] = true;
@@ -191,10 +193,10 @@ void Frontier::spawnBlock()	{
 
 	if (whichBlock == 3)	{ // L shaped block (right pointing)
 		int randNum = 5;
-		blocks[randNum-2][1] = 'A';
-		blocks[randNum-1][1] = 'A';
-		blocks[randNum][1] = 'A';
-		blocks[randNum-2][0] = 'A';
+		blocks[randNum-2][1] = 'O';
+		blocks[randNum-1][1] = 'O';
+		blocks[randNum][1] = 'O';
+		blocks[randNum-2][0] = 'O';
 		isAlive[randNum-2][1] = true;
 		isAlive[randNum-1][1] = true;
 		isAlive[randNum][1] = true;
@@ -207,10 +209,10 @@ void Frontier::spawnBlock()	{
 
 	if (whichBlock == 4)	{ // line block
 		int randNum = 5;
-		blocks[randNum-3][0] = 'A';
-		blocks[randNum-2][0] = 'A';
-		blocks[randNum-1][0] = 'A';
-		blocks[randNum][0] = 'A';
+		blocks[randNum-3][0] = 'C';
+		blocks[randNum-2][0] = 'C';
+		blocks[randNum-1][0] = 'C';
+		blocks[randNum][0] = 'C';
 		isAlive[randNum-3][0] = true;
 		isAlive[randNum-2][0] = true;
 		isAlive[randNum-1][0] = true;
@@ -224,10 +226,10 @@ void Frontier::spawnBlock()	{
 
 	if (whichBlock == 5)	{ // green skew
 		int randNum = 5;
-		blocks[randNum-1][1] = 'A';
-		blocks[randNum][1] = 'A';
-		blocks[randNum][0] = 'A';
-		blocks[randNum+1][0] = 'A';
+		blocks[randNum-1][1] = 'G';
+		blocks[randNum][1] = 'G';
+		blocks[randNum][0] = 'G';
+		blocks[randNum+1][0] = 'G';
 		isAlive[randNum-1][1] = true;
 		isAlive[randNum][1] = true;
 		isAlive[randNum][0] = true;
@@ -241,10 +243,10 @@ void Frontier::spawnBlock()	{
 
 	if (whichBlock == 6)	{ // red skew
 		int randNum = 5;
-		blocks[randNum][0] = 'A';
-		blocks[randNum+1][0] = 'A';
-		blocks[randNum+1][1] = 'A';
-		blocks[randNum+2][1] = 'A';
+		blocks[randNum][0] = 'R';
+		blocks[randNum+1][0] = 'R';
+		blocks[randNum+1][1] = 'R';
+		blocks[randNum+2][1] = 'R';
 		isAlive[randNum][0] = true;
 		isAlive[randNum+1][0] = true;
 		isAlive[randNum+1][1] = true;
@@ -334,22 +336,13 @@ void Frontier::cleanLines()	{
 	for (int j = 0; j < HEIGHT; ++j)	{
 		int counter = 0;
 		for (int i = 0; i < WIDTH; ++i)	{
-			if (!isAlive[i][j] && blocks[i][j] == 'A')	{
+			if (!isAlive[i][j] && blocks[i][j] != '.')	{ // if the block isn't alive and if it isn't empty (where empty is defined as containing '.')
 				counter++;
 			}
 		}
 		if (counter == WIDTH)	{
 			deleteAndShiftLine(j);
 		}
-	}
-}
-
-void Frontier::fillLine()	{ 
-	// a function used to speed up testing time
-	// it will fill the farthest line downwards with a bunch of dead A's
-	for (int i = 0; i < WIDTH-2; ++i)	{
-		blocks[i][HEIGHT-1] = 'A';
-		blocks[i][HEIGHT-2] = 'A';
 	}
 }
 
