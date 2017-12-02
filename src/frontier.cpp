@@ -1,6 +1,7 @@
 #include <iostream>
 #include <ncurses.h> // for handling input, arduino.h will provide similar functionality (I'm making sure of that)
 #include <cstdlib> // for rand()
+#include <vector>
 
 #include "frontier.h"
 
@@ -46,7 +47,16 @@ void Frontier::setAllDead()	{
 	shouldSpawn = true;
 }
 
-void Frontier::checkRotationAndRotateAllAlive(int direction)	{
+bool Frontier::isInBounds(int i, int j) {
+    if (i >= 0 && i < WIDTH && j < HEIGHT && j > 0) {
+        cout << "what you're trying to do is fine!\n";
+    } else  {
+        cout << "what you're trying to do is out of bounds!\n";
+    }
+    return !(i >= 0 && i < WIDTH && j < HEIGHT && j > 0);
+}
+
+void Frontier::checkRotationAndRotateAllAlive()	{
 	// checks all blocks that are alive, and checks to see if rotation is valid
 	// if it is valid, then the blocks are rotated
 	// let 0 be counterclockwise
@@ -54,35 +64,43 @@ void Frontier::checkRotationAndRotateAllAlive(int direction)	{
 	
 	// how do we do this?
 	// begin by doing a little defensive programming
-	bool hasRotated[WIDTH][HEIGHT];
-	for (int i = 0; i < WIDTH; ++i)	{
-		for (int j = 0; j < HEIGHT; ++j)	{
-			hasRotated[i][j] = false;
-		}
-	}
-	// asssuming the direction desired is clockwise...
-	if (direction == 0)	{
-		// first check to see if it's feasible
-		//
-		// CHECK CODE HERE
-		//
-		// now rotate all alive blocks
-		cout << "my origin coordinates are " << originX << ' ' << originY << endl;
-		for (int i = 0; i < WIDTH; ++i)	{
-			for (int j = 0; j < HEIGHT; ++j)	{
-				if (isAlive[i][j] && !hasRotated[i][j])	{
-					blocks[i][j] = '.'; // set the old position to empty
-					isAlive[i][j] = false; // kill the old block
-					cout << "I placed the block " << i << ' ' << j <<
-						" here " << originX-(j-originY) << ' '
-						<< originY-(i-originX) << '\n';
-					blocks[originX+(j-originY)][originY-(i-originX)] = 'A'; // create new block
-					isAlive[originX+(j-originY)][originY-(i-originX)] = true; // make it alive
-					hasRotated[originX+(j-originY)][originY-(i-originX)] = true; // it's rotated
-				}
-			}
-		}
-	}
+    // first check to see if it's feasible
+    //
+    // CHECK CODE HERE
+    //
+    // now rotate all alive blocks
+    cout << "my origin coordinates are " << originX << ' ' << originY << endl;
+    bool shouldRotate = true; // assume it's a valid move, then search for a counterexample if false
+    vector<int> xToUnpack;
+    vector<int> yToUnpack;
+    for (int i = 0; i < WIDTH; ++i)	{
+        for (int j = 0; j < HEIGHT; ++j)	{
+            //if (isAlive[i][j] && isInBounds(originX-(j-originY), originY+(i-originX)) && blocks[originX-(j-originY)][originY+(i-originX)] != '.')   { //if the block is alive, the rotation will end up being in bounds and the place that i  want to rotate to is empty
+            if (isAlive[i][j])  {
+                blocks[i][j] = '.'; // set the old position to empty
+                isAlive[i][j] = false; // kill the old block
+                cout << "I placed the block " << i << ' ' << j <<
+                    " here " << originX-(j-originY) << ' '
+                    << originY+(i-originX) << '\n';
+                
+                // fill a vector with the coordinates then unpack it later
+                xToUnpack.push_back(i);
+                yToUnpack.push_back(j);
+            } else  {
+                shouldRotate = false; // if it's illegal, don't allow the rotation
+            }
+        }
+    }
+    if (shouldRotate)   { // assuming that the rotation is valid
+        while (!xToUnpack.empty())  { // note xToUnpack and yToUnpack are the same size
+            int  i = xToUnpack.back();
+            xToUnpack.pop_back();
+            int j = yToUnpack.back();
+            yToUnpack.pop_back();
+            blocks[originX+(j-originY)][originY-(i-originX)] = 'A'; // create new block
+            isAlive[originX+(j-originY)][originY-(i-originX)] = true; // make it alive
+        }
+    }
 }
 
 	
@@ -95,7 +113,7 @@ void Frontier::spawnBlock()	{
 	int whichBlock = rand()%NUM_BLOCKS;
 
 	// for testing purposes...
-	whichBlock = 6;
+	whichBlock = 1;
 	cout << "spawning a block!\n";
 	
 	// now put the raw implementation of the blocks here
@@ -131,7 +149,6 @@ void Frontier::spawnBlock()	{
 		// set the origin
 		originX = randNum;
 		originY = 1;
-		// note: this rotation is bugged as of this edit, so hardcode it for now and fix it later
 	}
 
 	if (whichBlock == 2)	{ // L shaped block (left pointing)
@@ -179,7 +196,7 @@ void Frontier::spawnBlock()	{
 		isAlive[randNum][0] = true;
 
 		// set the origin, but this rotation is hardcoded to match SRS standard
-		originX = randNum;
+		originX = randNum+1;
 		originY = 0; 
 		// note; rotate them accordingly now
 	}
@@ -199,8 +216,6 @@ void Frontier::spawnBlock()	{
 		originX = randNum;
 		originY = 1;
 
-		// this rotation is bugged too
-
 	}
 
 	if (whichBlock == 6)	{ // red skew
@@ -218,7 +233,6 @@ void Frontier::spawnBlock()	{
 		originX = randNum+1;
 		originY = 1;
 
-		// this rotation is bugged too...
 	}
 }
 
@@ -483,11 +497,11 @@ void Frontier::turn()	{
 
 	// lets handle calls to rotation
 	if (currentMove == 'q')	{ // a desire to shift counterclockwise
-		checkRotationAndRotateAllAlive(0);
+		checkRotationAndRotateAllAlive();
 	}
 
 	// lets handle the drop down of all alive blocks
-	drop();
+	//drop();
 
 
 	// finally, lets handle the case where I need to clean up and shift the lines down
