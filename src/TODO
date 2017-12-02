@@ -1,6 +1,6 @@
 What do I need to do?
 
-- Implement rotation of the tetronimos
+- Fix the colors so that they're truthful to the game
 - Fix the randInts for all the tetronimos (how does tetris do it? emulate them)
 - Show the player where is tetronimo is going to land if he fastfalls
 - Implement tetronimo storing
@@ -8,3 +8,13 @@ What do I need to do?
 - Implement gameover
 - Implement pause screen
 - Make the code not shit
+
+
+Reserved colors for the board that I need to implement
+Cyan 'C' is for the straight
+Yellow 'Y' is for the cube
+Purple 'P' is for the T
+Green 'G' is for the right skew
+Red 'R' is for the left skew
+Blue 'B' is for the left L
+Orange 'O' is for the right L

@@ -48,12 +48,13 @@ void Frontier::setAllDead()	{
 }
 
 bool Frontier::isInBounds(int i, int j) {
+    cout << "this is what was passed to isInBounds " << i << ' ' << j << endl;
     if (i >= 0 && i < WIDTH && j < HEIGHT && j > 0) {
         cout << "what you're trying to do is fine!\n";
     } else  {
         cout << "what you're trying to do is out of bounds!\n";
     }
-    return !(i >= 0 && i < WIDTH && j < HEIGHT && j > 0);
+    return (i >= 0 && i < WIDTH && j < HEIGHT && j >= 0);
 }
 
 void Frontier::checkRotationAndRotateAllAlive()	{
@@ -62,45 +63,69 @@ void Frontier::checkRotationAndRotateAllAlive()	{
 	// let 0 be counterclockwise
 	// let 1 be clockwise
 	
-	// how do we do this?
-	// begin by doing a little defensive programming
-    // first check to see if it's feasible
-    //
-    // CHECK CODE HERE
-    //
-    // now rotate all alive blocks
     cout << "my origin coordinates are " << originX << ' ' << originY << endl;
     bool shouldRotate = true; // assume it's a valid move, then search for a counterexample if false
-    vector<int> xToUnpack;
-    vector<int> yToUnpack;
-    for (int i = 0; i < WIDTH; ++i)	{
-        for (int j = 0; j < HEIGHT; ++j)	{
-            //if (isAlive[i][j] && isInBounds(originX-(j-originY), originY+(i-originX)) && blocks[originX-(j-originY)][originY+(i-originX)] != '.')   { //if the block is alive, the rotation will end up being in bounds and the place that i  want to rotate to is empty
-            if (isAlive[i][j])  {
-                blocks[i][j] = '.'; // set the old position to empty
-                isAlive[i][j] = false; // kill the old block
-                cout << "I placed the block " << i << ' ' << j <<
-                    " here " << originX-(j-originY) << ' '
-                    << originY+(i-originX) << '\n';
-                
-                // fill a vector with the coordinates then unpack it later
-                xToUnpack.push_back(i);
-                yToUnpack.push_back(j);
-            } else  {
-                shouldRotate = false; // if it's illegal, don't allow the rotation
-            }
-        }
-    }
-    if (shouldRotate)   { // assuming that the rotation is valid
-        while (!xToUnpack.empty())  { // note xToUnpack and yToUnpack are the same size
-            int  i = xToUnpack.back();
-            xToUnpack.pop_back();
-            int j = yToUnpack.back();
-            yToUnpack.pop_back();
-            blocks[originX+(j-originY)][originY-(i-originX)] = 'A'; // create new block
-            isAlive[originX+(j-originY)][originY-(i-originX)] = true; // make it alive
-        }
-    }
+	bool breakLoop = false;
+
+	// lets search all blocks to see if we can find a counterexample
+	for (int i = 0; i < WIDTH; ++i)	{
+		if (breakLoop) break; // is this one liner fine?
+		for (int j = 0; j < HEIGHT; ++j)	{
+			if (isAlive[i][j])	{
+				// now check the rotation
+				// first check to see if the rotation is even in bounds
+				if (!isInBounds(originX+(j-originY), originY-(i-originX)))	{
+					// if it's out of bounds, then set shouldRotate to false
+					shouldRotate = false;
+					cout << "set shouldRotate to false because it was out of bounds!\n";
+					breakLoop = true;
+					break;
+				} else	{
+					// if it's in bounds, check to see if the rotation spot desired is covered
+					if (blocks[originX+(j-originY)][originY-(i-originX)] != '.' && !isAlive[originX+(j-originY)][originY-(i-originX)])	{
+						// if the spot is covered, don't allow the rotation
+						cout << "set shouldRotate to false because the desired block was occupied!\n";
+						shouldRotate = false;
+						breakLoop = true;
+						cout << "desired block is occupied!\n" <<
+							"the block there is " << blocks[originX+(j-originY)][originY-(i-originX)] << '\n' << 
+							"the block coordinates are " << 
+							originX+(j-originY) << ' ' <<
+							originY-(i-originX) << '\n';
+						break;
+					}
+				}
+			}
+		}
+	}	
+	// now, assuming that the rotation is true:
+	if (shouldRotate)	{
+			vector<int> xToUnpack;
+			vector<int> yToUnpack;
+			for (int i = 0; i < WIDTH; ++i)	{
+				for (int j = 0; j < HEIGHT; ++j)	{
+					if (isAlive[i][j])  {
+						blocks[i][j] = '.'; // set the old position to empty
+						isAlive[i][j] = false; // kill the old block
+						cout << "I placed the block " << i << ' ' << j <<
+							" here " << originX+(j-originY) << ' '
+							<< originY-(i-originX) << '\n';
+						
+						// fill a vector with the coordinates then unpack it later
+						xToUnpack.push_back(i);
+						yToUnpack.push_back(j);
+					}
+				}
+			}
+		while (!xToUnpack.empty())  { // note xToUnpack and yToUnpack are the same size
+			int  i = xToUnpack.back();
+			xToUnpack.pop_back();
+			int j = yToUnpack.back();
+			yToUnpack.pop_back();
+			blocks[originX+(j-originY)][originY-(i-originX)] = 'A'; // create new block
+			isAlive[originX+(j-originY)][originY-(i-originX)] = true; // make it alive
+		}
+	}
 }
 
 	
@@ -112,12 +137,8 @@ void Frontier::spawnBlock()	{
 	
 	int whichBlock = rand()%NUM_BLOCKS;
 
-	// for testing purposes...
-	whichBlock = 1;
-	cout << "spawning a block!\n";
-	
 	// now put the raw implementation of the blocks here
-	// NOTE: Very unsure about the bounds on the block, kind of rushing here so lets just go with this then fix it later
+	// NOTE: Switch to normal tetris implementation of blocks
 	
 	// cube block
 	if (whichBlock == 0)	{
@@ -326,8 +347,9 @@ void Frontier::cleanLines()	{
 void Frontier::fillLine()	{ 
 	// a function used to speed up testing time
 	// it will fill the farthest line downwards with a bunch of dead A's
-	for (int i = 0; i < WIDTH-3; ++i)	{
+	for (int i = 0; i < WIDTH-2; ++i)	{
 		blocks[i][HEIGHT-1] = 'A';
+		blocks[i][HEIGHT-2] = 'A';
 	}
 }
 
@@ -484,7 +506,7 @@ void Frontier::turn()	{
 		// something weird happens and I land somewhere in the middle (no clue how that happens)
 		cout << "i wanna fastfall!\n";
 		if (isAllowed(2))	{
-			moveAllAlive(2); // is this gonna be a problem with drop?
+			drop();
 		}
 	}
 
@@ -501,7 +523,7 @@ void Frontier::turn()	{
 	}
 
 	// lets handle the drop down of all alive blocks
-	//drop();
+	drop();
 
 
 	// finally, lets handle the case where I need to clean up and shift the lines down
