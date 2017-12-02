@@ -17,6 +17,9 @@ public:
     // variables 
     bool shouldSpawn;
     bool isAlive[WIDTH][HEIGHT];
+    int originX;
+    int originY;
+    int rotationState; // 0 = 0deg, 1 = 90deg, ... 
 
 
     //functions
@@ -38,6 +41,10 @@ public:
 	// 	Pass in 0 to check left movement
 	// 	Pass 1n 1 to check right movement
 	// 	Pass in 2 to check down movement
+    void checkRotationAndRotateAllAlive(int);
+	// instructions for above function
+	// 	Pass in 0 for counterclockwise rotation
+	// 	Pass in 1 for clockwise rotation
 };
 
 #endif

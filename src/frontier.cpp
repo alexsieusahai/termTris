@@ -4,6 +4,9 @@
 
 #include "frontier.h"
 
+// LIST OF BUGS:
+// 	it appears that a segmentation fault occurs when I try to fall twice occasionally with the w move
+
 using namespace std;
 
 void Frontier::printFrontier()	{
@@ -42,6 +45,46 @@ void Frontier::setAllDead()	{
 	}
 	shouldSpawn = true;
 }
+
+void Frontier::checkRotationAndRotateAllAlive(int direction)	{
+	// checks all blocks that are alive, and checks to see if rotation is valid
+	// if it is valid, then the blocks are rotated
+	// let 0 be counterclockwise
+	// let 1 be clockwise
+	
+	// how do we do this?
+	// begin by doing a little defensive programming
+	bool hasRotated[WIDTH][HEIGHT];
+	for (int i = 0; i < WIDTH; ++i)	{
+		for (int j = 0; j < HEIGHT; ++j)	{
+			hasRotated[i][j] = false;
+		}
+	}
+	// asssuming the direction desired is clockwise...
+	if (direction == 0)	{
+		// first check to see if it's feasible
+		//
+		// CHECK CODE HERE
+		//
+		// now rotate all alive blocks
+		cout << "my origin coordinates are " << originX << ' ' << originY << endl;
+		for (int i = 0; i < WIDTH; ++i)	{
+			for (int j = 0; j < HEIGHT; ++j)	{
+				if (isAlive[i][j] && !hasRotated[i][j])	{
+					blocks[i][j] = '.'; // set the old position to empty
+					isAlive[i][j] = false; // kill the old block
+					cout << "I placed the block " << i << ' ' << j <<
+						" here " << originX-(j-originY) << ' '
+						<< originY-(i-originX) << '\n';
+					blocks[originX+(j-originY)][originY-(i-originX)] = 'A'; // create new block
+					isAlive[originX+(j-originY)][originY-(i-originX)] = true; // make it alive
+					hasRotated[originX+(j-originY)][originY-(i-originX)] = true; // it's rotated
+				}
+			}
+		}
+	}
+}
+
 	
 void Frontier::spawnBlock()	{
 	// first, spawn a block by dropping some character onto the top of the board
@@ -60,7 +103,7 @@ void Frontier::spawnBlock()	{
 	
 	// cube block
 	if (whichBlock == 0)	{
-		int randNum = rand()%(WIDTH-2);
+		int randNum = 5;
 		blocks[randNum][0] = 'A';
 		blocks[randNum][1] = 'A';
 		blocks[randNum+1][0] = 'A';
@@ -69,18 +112,26 @@ void Frontier::spawnBlock()	{
 		isAlive[randNum][1] = true;
 		isAlive[randNum+1][0] = true;
 		isAlive[randNum+1][1] = true;
+		// here the origin doesn't matter since rotation doesn't change the orientation of the block 
 	}
 	
 	if (whichBlock == 1)	{ // T shaped block
 		int randNum = rand()%(WIDTH-3);
+		// spawn the block graphics
 		blocks[randNum-1][1] = 'A';
 		blocks[randNum][1] = 'A';
 		blocks[randNum+1][1] = 'A';
 		blocks[randNum][0] = 'A';
+		// set the game logic
 		isAlive[randNum-1][1] = true;
 		isAlive[randNum][1] = true;
 		isAlive[randNum+1][1] = true;
 		isAlive[randNum][0] = true;
+
+		// set the origin
+		originX = randNum;
+		originY = 1;
+		// note: this rotation is bugged as of this edit, so hardcode it for now and fix it later
 	}
 
 	if (whichBlock == 2)	{ // L shaped block (left pointing)
@@ -94,6 +145,10 @@ void Frontier::spawnBlock()	{
 		isAlive[randNum-1][1] = true;
 		isAlive[randNum][1] = true;
 		isAlive[randNum][0] = true;
+
+		// set the origin
+		originX = randNum-1;
+		originY = 1;
 	}
 
 	if (whichBlock == 3)	{ // L shaped block (right pointing)
@@ -106,6 +161,10 @@ void Frontier::spawnBlock()	{
 		isAlive[randNum-1][1] = true;
 		isAlive[randNum][1] = true;
 		isAlive[randNum-2][0] = true;
+
+		//set the origin
+		originX = randNum-1;
+		originY = 1;
 	}
 
 	if (whichBlock == 4)	{ // line block
@@ -118,9 +177,14 @@ void Frontier::spawnBlock()	{
 		isAlive[randNum-2][0] = true;
 		isAlive[randNum-1][0] = true;
 		isAlive[randNum][0] = true;
+
+		// set the origin, but this rotation is hardcoded to match SRS standard
+		originX = randNum;
+		originY = 0; 
+		// note; rotate them accordingly now
 	}
 
-	if (whichBlock == 5)	{ // right skew
+	if (whichBlock == 5)	{ // green skew
 		int randNum = 5;
 		blocks[randNum-1][1] = 'A';
 		blocks[randNum][1] = 'A';
@@ -130,9 +194,16 @@ void Frontier::spawnBlock()	{
 		isAlive[randNum][1] = true;
 		isAlive[randNum][0] = true;
 		isAlive[randNum+1][0] = true;
+
+		// set the origin
+		originX = randNum;
+		originY = 1;
+
+		// this rotation is bugged too
+
 	}
 
-	if (whichBlock == 6)	{ // left skew
+	if (whichBlock == 6)	{ // red skew
 		int randNum = 5;
 		blocks[randNum][0] = 'A';
 		blocks[randNum+1][0] = 'A';
@@ -142,6 +213,12 @@ void Frontier::spawnBlock()	{
 		isAlive[randNum+1][0] = true;
 		isAlive[randNum+1][1] = true;
 		isAlive[randNum+2][1] = true;
+
+		//set the origin
+		originX = randNum+1;
+		originY = 1;
+
+		// this rotation is bugged too...
 	}
 }
 
@@ -182,7 +259,7 @@ void Frontier::drop()	{
 							//cout << "i'm dropping " << i << ' ' << j << '\n';
 							// handle movement here
 							if (isAllowed(2))	{ // checking if downward movement is allowed
-								cout << "I am executing moveAllAlive(2) to move all down by 2!\n";
+								//cout << "I am executing moveAllAlive(2) to move all down by 2!\n";
 								moveAllAlive(2);
 								shouldContinue = false;
 								break;
@@ -287,7 +364,7 @@ bool Frontier::isAllowed(int move)	{
 			}
 		}
 	}
-	cout << "this movement appears to be allowed!\n";
+	//cout << "this movement appears to be allowed!\n";
 	return true;
 }
 
@@ -309,24 +386,30 @@ void Frontier::moveAllAlive(int direction)	{
 				}
 			}
 		}
+		// shift the origin
+		originX -= 1;
 	}
 	if (direction == 1)	{ // right movement
 		for (int i = WIDTH-1; i >= 0; --i)	{
 			for (int j = HEIGHT-1; j >= 0; --j)	{
 				if (isAlive[i][j])	{
-					move(i,j,i+1,j);
+					move(i,j,i+1,j); //move to the right
 				}
 			}
 		}
+		//shift the origin 
+		originX += 1;
 	}
 	if (direction == 2)	{
 		for (int i = 0; i < WIDTH; ++i)	{
 			for (int j = HEIGHT-1; j >= 0; --j)	{
 				if (isAlive[i][j])	{
-					move(i,j,i,j+1);
+					move(i,j,i,j+1); //move up
 				}
 			}
 		}
+		// shift the origin
+		originY += 1;
 	}
 }
 	
@@ -382,6 +465,7 @@ void Frontier::turn()	{
 	}
 
 	if (currentMove == 's')	{ // implementation of fastfall
+		// BUG: this causes segmentation fault sometimes I think
 		// this is also a bandage solution, true fastfall has a bug where if I do it on the farthest left
 		// something weird happens and I land somewhere in the middle (no clue how that happens)
 		cout << "i wanna fastfall!\n";
@@ -396,6 +480,11 @@ void Frontier::turn()	{
 	// Implement a CORRECT fast fall bound to s
 	// Implement rotations (use a different function for that)
 	// 	Bind the rotations to q and e
+
+	// lets handle calls to rotation
+	if (currentMove == 'q')	{ // a desire to shift counterclockwise
+		checkRotationAndRotateAllAlive(0);
+	}
 
 	// lets handle the drop down of all alive blocks
 	drop();
@@ -412,4 +501,7 @@ void Frontier::turn()	{
 		spawnBlock();
 		shouldSpawn = false;
 	}
+
+	// test stuff here
+	cout << "originX is " << originX << " and originY is " << originY << endl;
 }
