@@ -20,7 +20,7 @@ void Frontier::printFrontier()	{
 	// Eventually we can make blocks hold a block structure, which would contain its color (and we should refractor so it holds the alive attribute as well)
 	
 	generateGhost();
-	cout << "i'm running printFrontier!\n";
+	//cout << "i'm running printFrontier!\n";
 	// print line by line
 	for (int j = 0; j < HEIGHT; ++j)	{ 
 		for (int i = 0; i < WIDTH; ++i)	{
@@ -59,6 +59,32 @@ void Frontier::printFrontier()	{
 				cout << "\tGreen Skew";
 			}
 			if (blockVec.back() == 6)	{
+				cout << "\tRed Skew";
+			}
+		}
+		if (j == 9)	{
+			cout << "\tSTORED BLOCK";
+		}
+		if (j == 10)	{
+			if (storedBlock == 0)	{
+				cout << "\tSQUARE";
+			}
+			if (storedBlock == 1)	{
+				cout << "\tT";
+			}
+			if (storedBlock == 2)	{
+				cout << "\tLeft Pointing L";
+			}
+			if (storedBlock == 3)	{
+				cout << "\tRight Pointing L";
+			}
+			if (storedBlock == 4)	{
+				cout << "\tLine Block";
+			}
+			if (storedBlock == 5)	{
+				cout << "\tGreen Skew";
+			}
+			if (storedBlock == 6)	{
 				cout << "\tRed Skew";
 			}
 		}
@@ -111,7 +137,7 @@ void Frontier::generateGhost()	{
 			}
 		}
 	}
-	cout << counter << endl;
+	//cout << counter << endl;
 	if (counter == 0)	{ // if none of the blocks were alive
 		return; 
 	}
@@ -272,6 +298,10 @@ void Frontier::initializeGame()	{ // handles initialization of game
 	score = 0;
 	blockVec.push_back(rand()%NUM_BLOCKS);
 	score = 0;
+	storedBlock = -1; // no block stored
+	paused = false;
+	swapAvailable = true;
+	whichBlock = rand()%NUM_BLOCKS;
 	// print the game instructions then wait for the user to input enter once he's read the instructions
 	cout << "Welcome to Terminal Tetris!\nMade by ItsPax.\nUse WASD To move, and press Q to rotate the blocks. Press P to pause, and R to restart.\nPlease press enter to start the game!\n";;
 	cin.get(); // effectively waits for the player to press enter
@@ -285,15 +315,18 @@ void Frontier::spawnBlock()	{
 	// TODO:
 	// after the above is implemented, make sure to GAME OVER if the spot where we spawned the tetronimo is covered
 	// spawn some random kind of block (have to implement a hasMoved array and check it otherwise move will not work)
-	whichBlock = blockVec.back();
-	blockVec.pop_back();
-	blockVec.push_back(rand()%NUM_BLOCKS);
+	if (whichBlock == -1)	{
+		whichBlock = blockVec.back();
+		blockVec.pop_back();
+		blockVec.push_back(rand()%NUM_BLOCKS);
+		swapAvailable = true;
+	}
 	// NOTE TO MAX:
 	// 	Ignore the above entirely and just set whichBlock = rand()%NUM_BLOCKS
 
 	// now put the raw implementation of the blocks here
 	// NOTE: Switch to normal tetris implementation of blocks
-	
+	currentBlock = whichBlock;
 	if (whichBlock == 0)	{ //square block
 		int spawnX = 5;
 		blocks[spawnX][0] = 'Y';
@@ -621,6 +654,8 @@ void Frontier::turn()	{
 
 	// NOTE TO MAX:
 	// 	I will write what's going on with the ncurses implementation, just take that functionality and move it to Arduino using arduino libraries
+	// 	Don't worry about any of the features like pause, restart etc
+	// 	***** JUST IMPLEMENT MOVEMENT AND HARD DROP ALLOWANCE USING THE JOYSTICK
 	
 	initscr(); // start curses mode
 	noecho(); // I don't want the user to see what he's inputting!
@@ -628,6 +663,44 @@ void Frontier::turn()	{
 	char currentMove = getch(); // this will grab a character on istream at this moment if there's anything to grab
 	//cout << "getch() caught " << int(currentMove) << ' ' << currentMove << endl;
 	endwin();  // end curses mode
+
+	// before anything, lets check to see if the game is paused
+	if (paused)	{
+		cout << "The game is paused!\n";
+		if (currentMove == 'p')	{
+			paused = !paused;
+			cout << "Unpausing the game!\n";
+		}
+		return;
+	}
+
+	if (currentMove == 'p')	{
+		paused = !paused;
+		cout << "Pausing the game!\n";
+	}
+
+	if (currentMove == 'e' && swapAvailable)	{ //the player has issued a command to swap
+		// check if a swap is allowed according to rules
+		// sweep through the board and find any alive blocks, then kill and empty them, effectively despawning the piece
+		int temp = storedBlock;
+		storedBlock = currentBlock;
+		swapAvailable = false;
+		if (temp != -1)	{
+			whichBlock = temp;  
+		}
+		shouldSpawn = true;
+		for (int i = 0; i < WIDTH; ++i)	{
+			for (int j = 0; j < HEIGHT; ++j)	{
+				if (isAlive[i][j])	{
+					blocks[i][j] = '.';
+					isAlive[i][j] = false;
+				}
+			}
+		}
+		return;
+	}
+
+
 	
 	// implementing it more true to tetris
 	if (currentMove == 'a')	{  // if i want to move to the left
@@ -692,7 +765,6 @@ void Frontier::turn()	{
 	}
 
 
-
 	// lets handle the drop down of all alive blocks
 	drop();
 
@@ -714,6 +786,7 @@ void Frontier::turn()	{
 		//cout << "Initialzing game over screen...\n";
 		restart();
 	}
+	whichBlock = -1; //if you reach the end, set whichBlock to negative 1
 }
 
 void Frontier::restart()	{ // what I'm going to do here is initialize everything that I initialized at the beginning, then it's effectively a restart

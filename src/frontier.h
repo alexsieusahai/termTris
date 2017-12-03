@@ -24,6 +24,10 @@ public:
     int score;
     int highScore;
     std::vector<int> blockVec;
+    bool paused;
+    int currentBlock;
+    int storedBlock;
+    bool swapAvailable;
 
 
     //functions
