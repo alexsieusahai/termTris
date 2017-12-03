@@ -9,7 +9,6 @@
 // I chose to be wasteful with my code in order to make porting it onto an arduino extremely easy, in the near future data structures in stl
 
 // LIST OF BUGS:
-// 	it appears that a segmentation fault occurs when I try to fall twice occasionally with the w move
 
 using namespace std;
 
@@ -705,6 +704,7 @@ void Frontier::turn()	{
 	// implementing it more true to tetris
 	if (currentMove == 'a')	{  // if i want to move to the left
 		//cout << "I'm moving to the left!\n";
+		bool shouldContinue = true;
 		for (int i = 0; i < WIDTH; ++i)	{
 			for (int j = HEIGHT-1; j >= 0; --j)	{ // this way I will never propagate a movement unintended
 				if (isAllowed(0))	{ // BAD: BANDAGE FIX TO PROBLEM, ADDS UNECESSARY SLOWDOWN
@@ -714,14 +714,19 @@ void Frontier::turn()	{
 						moveAllAlive(0);
 						break;
 					}
+				} else	{
+					shouldContinue = false;
 				}
 			}
 		}
-		return; //feels more like tetris this way, and more fair
+		if (shouldContinue)	{
+			return; //feels more like tetris this way, and more fair
+		}
 	}
 
 	if (currentMove == 'd')	{ // if i want to move to the right
 		//cout << "I'm moving to the right!\n";
+		bool shouldContinue = true;
 		for (int i = WIDTH-1; i >= 0; --i)	{
 			for (int j = HEIGHT-1; j >= 0; --j)	{
 				if (isAllowed(1))	{
@@ -729,10 +734,14 @@ void Frontier::turn()	{
 						moveAllAlive(1);
 						break;
 					}
+				} else	{
+					shouldContinue = false;
 				}
 			}
 		}
-		return; //feels more like tetris this way, and more fair
+		if (shouldContinue)	{
+			return; //feels more like tetris this way, and more fair
+		}
 	}
 
 	if (int(currentMove) == 32)	{ // spacebar has been pressed
