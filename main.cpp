@@ -1,12 +1,17 @@
 
 #include "frontier.h" 
 #include <iostream>
+#include <fstream>
 
 int main()  {
     // consider tossing all of the below into an initalize() function
     // initializes game
     Frontier io;
-    io.highScore = 0;
+    // load highScore from fstream
+    std::ifstream storedHs;
+    storedHs.open("highScore.txt");
+    storedHs >> io.highScore; 
+    storedHs.close();
     io.fillFrontierWithDots();
     io.setAllDead();
     io.initializeGame();

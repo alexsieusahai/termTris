@@ -2,6 +2,7 @@
 #include <ncurses.h> // for handling input, arduino.h will provide similar functionality (I'm making sure of that)
 #include <cstdlib> // for rand()
 #include <vector>
+#include <fstream>
 
 #include "frontier.h"
 
@@ -181,7 +182,6 @@ void Frontier::generateGhost()	{
 
 void Frontier::moveToGhost()	{
 	generateGhost();
-	cout << "got here!\n";
 	char temp;
 	vector<int> newX,newY;
 	for (int i = 0; i < WIDTH; ++i)	{
@@ -296,7 +296,6 @@ void Frontier::checkRotationAndRotateAllAlive()	{
 void Frontier::initializeGame()	{ // handles initialization of game
 	score = 0;
 	blockVec.push_back(rand()%NUM_BLOCKS);
-	score = 0;
 	storedBlock = -1; // no block stored
 	paused = false;
 	swapAvailable = true;
@@ -537,9 +536,6 @@ void Frontier::cleanLines()	{
 		}
 		if (counter == WIDTH)	{
 			score++;
-			if (score > highScore)	{
-				highScore = score;
-			}
 			deleteAndShiftLine(j);
 		}
 	}
@@ -803,6 +799,11 @@ void Frontier::turn()	{
 void Frontier::restart()	{ // what I'm going to do here is initialize everything that I initialized at the beginning, then it's effectively a restart
 	if (score > highScore)	{
 		highScore = score;
+        // write to file
+        ofstream storedHs;
+        storedHs.open("highScore.txt");
+        storedHs << highScore << flush;
+        storedHs.close();
 	}
 	fillFrontierWithDots();
 	setAllDead();
