@@ -444,12 +444,14 @@ void Frontier::spawnBlock()	{
 }
 
 bool Frontier::checkGameOver()	{
-	for (int i = 3; i < 8; ++i)	{
-		if (blocks[i][0] != '.' && !isAlive[i][0])	{
-			cout << "GAME OVER!\n\n\n";
-			return true;
-		}
-	}
+    for (int j = 0; j < 1; ++j) {
+        for (int i = 0; i < WIDTH; ++i)	{
+            if (blocks[i][j] != '.' && !isAlive[i][j])	{
+                cout << "GAME OVER!\n\n\n";
+                return true;
+            }
+        }
+    }
 	return false;
 }
 
@@ -797,4 +799,7 @@ void Frontier::restart()	{ // what I'm going to do here is initialize everything
 	setAllDead();
 	initializeGame();
 	resetGhostGrid();
+    for (int j = 0; j < HEIGHT+3; ++j)   {
+        cout << '\n';
+    }
 }
